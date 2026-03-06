@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unified Ads Intelligence | CSV Order</title>
+    <meta name="description"
+        content="Dashboard unificado para el seguimiento de anuncios con limpieza de datos vía n8n.">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+
+<body>
+    <p class="ver">version 0.0.2</p>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="logo-container">
+                <div class="logo-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="20" x2="12" y2="10"></line>
+                        <line x1="18" y1="20" x2="18" y2="4"></line>
+                        <line x1="6" y1="20" x2="6" y2="16"></line>
+                    </svg>
+                </div>
+                <span class="logo-text">Unified Ads</span>
+            </div>
+
+            <nav class="nav-menu">
+                <li class="nav-item">
+                    <a href="#" class="nav-link active" id="nav-dashboard">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="14" width="7" height="7"></rect>
+                            <rect x="3" y="14" width="7" height="7"></rect>
+                        </svg>
+                        Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" id="nav-cleaner">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path
+                                d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83">
+                            </path>
+                        </svg>
+                        Limpiar Datos
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" id="nav-meta">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
+                        </svg>
+                        Meta Ads
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" id="nav-tiktok">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"></path>
+                        </svg>
+                        TikTok Ads
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" id="nav-google">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M12 8l4 4-4 4M8 12h7"></path>
+                        </svg>
+                        Google Ads
+                    </a>
+                </li>
+                <li class="nav-item" style="margin-top: auto; padding-top: 2rem;">
+                </li>
+                <li class="nav-item">
+                    <button class="import-btn" id="open-import">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                        Importar Excel
+                    </button>
+                </li>
+                <li class="nav-item" style="margin-top: 1rem;">
+                    <button class="nav-link" id="open-manual"
+                        style="width: 100%; justify-content: flex-start; background: none; border: none; cursor: pointer; color: var(--text-muted);">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                        </svg>
+                        Manual de Usuario
+                    </button>
+                </li>
+                <li class="nav-item" style="margin-top: 1rem;">
+                    <a href="https://docs.google.com/spreadsheets/d/1KQw93xunv54w4VuOIX7kI69kYmbKv33Eko5pi5zDq7A/edit?pli=1&gid=637718234#gid=637718234"
+                        target="_blank" class="import-btn"
+                        style="display: flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: var(--text-muted); font-size: 0.85rem;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z">
+                            </path>
+                        </svg>
+                        Abrir Carpeta Drive
+                    </a>
+                </li>
+            </nav>
+        </aside>
+
+        <!-- Main Dashboard Content -->
+        <main class="main-content">
+            <header class="header">
+                <div class="welcome-text">
+                    <h1 id="view-title">Intelligence Resumen</h1>
+                    <p id="view-description">Análisis consolidado de patrones detectados en el scraping.</p>
+                </div>
+                <div class="date-display" id="current-date"></div>
+            </header>
+
+            <!-- Overview Section (Dashboard) -->
+            <div id="section-dashboard" class="dashboard-section">
+                <section class="stats-grid">
+                    <div class="stat-card">
+                        <span class="platform-badge meta-badge">Meta Ads</span>
+                        <div class="stat-label">Ad Trust Promedio</div>
+                        <div class="stat-value" id="dash-meta-spend">0/100</div>
+                    </div>
+                    <div class="stat-card">
+                        <span class="platform-badge tiktok-badge">TikTok Ads</span>
+                        <div class="stat-label">Saturación</div>
+                        <div class="stat-value" id="dash-tiktok-conv">N/A</div>
+                    </div>
+                    <div class="stat-card">
+                        <span class="platform-badge google-badge">Google Ads</span>
+                        <div class="stat-label">Cuota de Voz</div>
+                        <div class="stat-value" id="dash-google-ctr">0%</div>
+                    </div>
+                </section>
+
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h2>Top Competidores (Longevidad)</h2>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="mainChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- n8n Cleaner Section (Merged from CSV Order) -->
+            <div id="section-cleaner" class="dashboard-section" style="display: none;">
+                <div class="chart-card" style="max-width: 600px; margin: 0 auto;">
+                    <div class="chart-header" style="text-align: center;">
+                        <h2>Limpiar Basura de CSV</h2>
+                        <p style="color: var(--text-muted);">Envía tu archivo bruto a n8n para estructurarlo.</p>
+                    </div>
+
+                    <div id="drop-zone-n8n" class="upload-zone"
+                        style="cursor: pointer; border: 2px dashed var(--border-color); border-radius: 20px; padding: 3rem; text-align: center; margin: 2rem 0;">
+                        <span style="font-size: 3rem; display: block; margin-bottom: 1rem;">🧹</span>
+                        <p id="file-name-n8n"><strong>Haz clic</strong> o arrastra el CSV aquí</p>
+                        <input type="file" id="file-input-n8n" hidden accept=".csv">
+                    </div>
+
+                    <button id="convert-btn-n8n" class="import-btn"
+                        style="width: 100%; padding: 1rem; border-style: solid; display: none;">
+                        Enviar a n8n
+                    </button>
+
+                    <div id="n8n-status-area" style="margin-top: 1.5rem; text-align: center; display: none;">
+                        <div class="loader" id="n8n-loader" style="margin: 0 auto 10px;"></div>
+                        <p id="n8n-status-text" style="color: var(--primary-green);"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Meta Ads Section (Intelligence Model) -->
+            <div id="section-meta" class="dashboard-section" style="display: none;">
+                <section class="stats-grid">
+                    <div class="stat-card" title="Calculado por: Longevidad x Cantidad de Variantes">
+                        <div class="stat-label">Ad Trust Score (Score de Victoria)</div>
+                        <div class="stat-value" id="meta-trust-score">0.0</div>
+                        <div class="stat-trend">Potencial de Rentabilidad</div>
+                    </div>
+                    <div class="stat-card" title="Estimación basada en Alcance_Estimado / Tiempo">
+                        <div class="stat-label">Impacto Inferido (Vistas Est.)</div>
+                        <div class="stat-value" id="meta-inferred-reach">0</div>
+                        <div class="stat-trend">Cálculo por Modelo de Inferencia</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Escala de Inversión</div>
+                        <div class="stat-value" id="meta-investment-scale">Nivel --</div>
+                        <div class="stat-trend">Basado en variantes activas</div>
+                    </div>
+                </section>
+
+                <div class="content-grid">
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h2>Análisis de Ganadores (Winners)</h2>
+                            <p style="font-size: 0.8rem; color: var(--text-muted);">Filtrado por: Longevidad > 21 días
+                            </p>
+                        </div>
+                        <div class="chart-container"><canvas id="metaChart"></canvas></div>
+                    </div>
+
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h2>Modelo de Inferencia</h2>
+                        </div>
+                        <div class="inference-card-body" style="padding: 10px;">
+                            <p style="font-size: 0.9rem; margin-bottom: 1rem;">Dado que Meta restringe el alcance
+                                exacto, usamos un <strong>Modelo Proxy</strong>:</p>
+                            <ul style="font-size: 0.85rem; color: var(--text-muted); list-style: none;">
+                                <li style="margin-bottom: 8px;">🔹 <strong>Base:</strong> Alcance_Estimado (Celda)</li>
+                                <li style="margin-bottom: 8px;">🔹 <strong>Multiplicador:</strong> Tiempo en Circulación
+                                </li>
+                                <li style="margin-bottom: 8px;">🔹 <strong>Factor de Variantes:</strong> Cantidad de
+                                    Anuncios</li>
+                            </ul>
+                            <div
+                                style="margin-top: 1.5rem; padding: 10px; background: rgba(0,223,130,0.05); border-radius: 8px; border-left: 3px solid var(--primary-green);">
+                                <small>Este cruce nos permite estimar qué anuncios están recibiendo mayor flujo de
+                                    capital.</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN DE MOCKUPS DE FACEBOOK ADS -->
+                <div style="margin-top: 3rem;">
+                    <h2 style="margin-bottom: 1.5rem;">Previsualización de Ganadores</h2>
+                    <div id="fb-ad-container" class="fb-ad-grid">
+                        <!-- Los anuncios se cargarán aquí dinámicamente -->
+                        <p style="color: var(--text-muted);">Sube un archivo Excel para ver los anuncios aquí.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TikTok Ads Section -->
+            <div id="section-tiktok" class="dashboard-section" style="display: none;">
+                <div class="coming-soon-container">
+                    <span class="coming-soon-icon">🎵</span>
+                    <h2>TikTok Ads Analytics</h2>
+                    <p>Próximamente: Integración avanzada de engagement y tendencias virales.</p>
+                    <div class="coming-soon-badge">Coming Soon</div>
+                </div>
+            </div>
+
+            <!-- Google Ads Section -->
+            <div id="section-google" class="dashboard-section" style="display: none;">
+                <div class="coming-soon-container">
+                    <span class="coming-soon-icon">🔍</span>
+                    <h2>Google Ads Analytics</h2>
+                    <p>Próximamente: Seguimiento de Search, Shopping y cuota de mercado.</p>
+                    <div class="coming-soon-badge">Coming Soon</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Import Modal (View Results) -->
+    <div class="modal-overlay" id="import-modal">
+        <div class="modal-content">
+            <button class="close-modal" id="close-modal">&times;</button>
+            <h2>Importar Hoja de Excel</h2>
+            <p style="color: var(--text-muted); margin: 0.5rem 0 1.5rem 0;">Saca el reporte analizado de Google Drive y
+                súbelo aquí para visualizar los insights de competencia.</p>
+
+            <div class="upload-zone" id="drop-zone">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                    stroke-linecap="round" stroke-linejoin="round"
+                    style="margin-bottom: 1rem; color: var(--primary-green);">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+                <p>Suelta tu archivo **.xlsx** o **.xls** aquí</p>
+                <input type="file" id="file-input" hidden accept=".xlsx, .xls, .csv">
+            </div>
+
+            <div id="upload-status"
+                style="text-align: center; font-size: 0.9rem; margin-top: 1rem; color: var(--primary-green); display: none;">
+                Analizando patrones competitivos...
+            </div>
+        </div>
+    </div>
+    <!-- Patch Notes Modal -->
+    <div class="modal-overlay" id="patch-notes-modal">
+        <div class="modal-content notes-card">
+            <button class="close-modal" id="close-patch-notes">&times;</button>
+            <div class="notes-header">
+                <h2>📋 Notas de Versión</h2>
+                <p style="color: var(--text-muted);">Historial de cambios y próximas mejoras.</p>
+            </div>
+            <div class="notes-body"
+                style="margin-top: 1.5rem; max-height: 400px; overflow-y: auto; padding-right: 10px;">
+                <div class="note-item" style="margin-bottom: 1.5rem; padding-bottom: 1rem;">
+                    <span class="note-date" style="font-size: 0.75rem; color: var(--primary-green); font-weight: 600;">
+                        25/02/2026</span>
+                    <div class="note-text" style="margin-top: 0.5rem; font-size: 0.95rem;">
+                        Esta herramienta todavía sigue en desarrollo tanto como el flujo de n8n y las técnicas de
+                        scraping, por lo tanto si se presentan bugs es necesario <strong>hacerlo saber</strong> para
+                        corrección y optimización de dicho servicio, se debe tomar en cuenta que el flujo de n8n suele
+                        ser lento en cuanto al análisis de datos, por lo que se le sugiere al usuario tener paciencia
+                        mientras se optimiza el servicio. <strong style="color: rgb(158, 43, 43);">Esto es solo una
+                            página de demostración, todavía sigue en su fase de desarrollo.
+                        </strong>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    </div>
+    <!-- Manual de Usuario Modal -->
+    <div class="modal-overlay" id="manual-modal">
+        <div class="modal-content"
+            style="max-width: 550px; max-height: 85vh; overflow-y: auto; padding: 2.5rem; display: flex; flex-direction: column;">
+            <button class="close-modal" id="close-manual"
+                style="position: absolute; right: 20px; top: 20px;">&times;</button>
+            <div class="manual-header" style="text-align: center; margin-bottom: 2rem;">
+                <h2 style="color: var(--primary-green); font-size: 1.5rem;">📖 Manual de Usuario</h2>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">Paso <span id="current-step-display">1</span> de
+                    4</p>
+            </div>
+
+            <div class="manual-body" style="flex: 1; text-align: left; line-height: 1.6;">
+
+                <!-- PASO 1 -->
+                <div class="manual-step" id="manual-step-1">
+                    <h3 style="margin-bottom: 1rem;">👋 1. La Herramienta</h3>
+                    <p style="margin-bottom: 1rem;">Bienvenido. Para extraer los datos de la Biblioteca de Anuncios,
+                        necesitas instalar la siguiente extensión de Chrome obligatoriamente:</p>
+                    <a href="https://chromewebstore.google.com/detail/instant-data-scraper/ofaokhiedipichpaobibbnahnkdoiiah?hl=es"
+                        target="_blank" class="import-btn"
+                        style="display: inline-block; text-decoration: none; width: 100%; text-align: center; margin-bottom: 1.5rem;">
+                        Descargar Instant Data Scraper
+                    </a>
+
+                    <div style="width: 100%; background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; margin-top: 1rem; box-shadow: 0 4px 15px rgba(0,0,0,0.3); cursor: pointer;"
+                        class="screenshot-container">
+                        <img src="Captura1.PNG" style="width: 100%; height: auto; display: block; object-fit: contain;"
+                            class="previewable-img">
+                    </div>
+                </div>
+
+                <!-- PASO 2 -->
+                <div class="manual-step" id="manual-step-2" style="display: none;">
+                    <h3 style="margin-bottom: 1rem;">📊 2. Extrayendo en Meta</h3>
+                    <p style="margin-bottom: 1rem;">Ve a Meta Ads Library, realiza tu búsqueda y utiliza la extensión
+                        que acabas de instalar para generar tu archivo CSV en bruto.</p>
+
+                    <div style="width: 100%; background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; margin-top: 1rem; box-shadow: 0 4px 15px rgba(0,0,0,0.3); cursor: pointer;"
+                        class="screenshot-container">
+                        <img src="Captura2.PNG" style="width: 100%; height: auto; display: block; object-fit: contain;"
+                            class="previewable-img">
+                    </div>
+                </div>
+
+                <!-- PASO 3 -->
+                <div class="manual-step" id="manual-step-3" style="display: none;">
+                    <h3 style="margin-bottom: 1rem;">🧹 3. Limpieza de Datos (n8n)</h3>
+                    <p style="margin-bottom: 1rem;">Ve a la sección "Limpiar Datos" en este Dashboard y sube el archivo
+                        CSV que descargaste.</p>
+
+                    <div
+                        style="background: rgba(255, 77, 77, 0.1); border-left: 4px solid #ff4d4d; padding: 15px; border-radius: 0 8px 8px 0; margin-bottom: 1.5rem;">
+                        <strong style="color: #ff4d4d; font-size: 1.1em; display: block; margin-bottom: 5px;">⚠️ QUÉ NO
+                            HACER:</strong>
+                        <p style="margin-bottom: 0; font-size: 0.9em;"><strong>NUNCA</strong> envíes múltiples archivos
+                            ni intentes saltar la cola. Sube <strong>1 ARCHIVO</strong> y espera pacientemente a que se
+                            procese.</p>
+                    </div>
+
+                    <div
+                        style="width: 100%; height: 180px; background: rgba(255,255,255,0.02); border: 2px dashed var(--border-color); display: flex; align-items: center; justify-content: center; border-radius: 12px; color: var(--text-muted); text-align: center; padding: 1rem;">
+                        <img src="Captura3.PNG"
+                            style="width: 100%; cursor: pointer; height: auto; display: block; object-fit: contain;"
+                            class="previewable-img">
+                    </div>
+                </div>
+
+                <!-- PASO 4 -->
+                <div class="manual-step" id="manual-step-4" style="display: none;">
+                    <h3 style="margin-bottom: 1rem;">📥 4. Recuperar y Analizar</h3>
+                    <p style="margin-bottom: 1rem;">Cuando el procesamiento acabe, el archivo limpio estará en tu Google
+                        Drive. Descárgalo y súbelo aquí usando <strong>"Importar Excel"</strong>.</p>
+
+                    <a href="https://docs.google.com/spreadsheets/d/1KQw93xunv54w4VuOIX7kI69kYmbKv33Eko5pi5zDq7A/edit?pli=1&gid=637718234#gid=637718234"
+                        target="_blank" class="import-btn"
+                        style="display: inline-block; text-decoration: none; width: 100%; text-align: center; margin-bottom: 1.5rem; background: var(--border-color); color: white; border: none;">
+                        Abrir Google Drive
+                    </a>
+
+                    <div
+                        style="width: 100%; height: 180px; background: rgba(255,255,255,0.02); border: 2px dashed var(--border-color); display: flex; align-items: center; justify-content: center; border-radius: 12px; color: var(--text-muted); text-align: center; padding: 1rem;">
+                        <img src="Captura4.PNG"
+                            style="width: 100%; cursor: pointer; height: auto; display: block; object-fit: contain;"
+                            class="previewable-img">
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="manual-footer"
+                style="display: flex; justify-content: space-between; margin-top: 2rem; border-top: 1px solid var(--border-color); padding-top: 1.5rem;">
+                <button id="manual-btn-prev" class="import-btn"
+                    style="background: transparent; border: 1px solid var(--border-color); color: white; visibility: hidden; padding: 0.8rem 1.5rem;">←
+                    Anterior</button>
+                <button id="manual-btn-next" class="import-btn" style="padding: 0.8rem 1.5rem;">Siguiente →</button>
+            </div>
+        </div>
+    </div>
+    <!-- Modal de Vista Previa para Imágenes -->
+    <div id="image-preview-modal" class="modal-overlay"
+        style="z-index: 9999; display: none; background: rgba(0,0,0,0.9);">
+        <span id="close-image-preview"
+            style="position: absolute; top: 20px; right: 40px; color: white; font-size: 40px; font-weight: bold; cursor: pointer; transition: 0.3s;">&times;</span>
+        <img id="preview-img-content"
+            style="margin: auto; display: block; max-width: 90%; max-height: 90%; border-radius: 8px; box-shadow: 0 0 20px rgba(0,0,0,0.5);">
+    </div>
+
+    <script src="main.js"></script>
+</body>
+
+</html>
