@@ -1,7 +1,7 @@
 # Documentación Técnica y Limitaciones - Unified Ads Dashboard (v0.0.2)
 
 ## 📌 Propósito de la Herramienta
-Este Dashboard ha sido diseñado para centralizar el análisis de competencia en Meta Ads Library. Su función principal es transformar datos brutos extraídos mediante scraping en métricas de marketing accionables, como el **Ad Trust Score** y el **Alcance Inferido**.
+Este Dashboard es un **Organizador de Datos** diseñado para estructurar y limpiar los archivos CSV desordenados que se extraen de Meta Ads Library mediante la extensión **"Instant Data Scraper"**. Su función principal es transformar estos datos brutos en métricas de marketing accionables, como el **Ad Trust Score** y el **Alcance Inferido**.
 
 ---
 

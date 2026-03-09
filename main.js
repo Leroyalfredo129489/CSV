@@ -1,9 +1,9 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // --- SERVER CONFIG (from CSV Order) ---
+    // --- CONFIGURACIÓN DE SERVIDOR ---
     const SERVER_URL = '/upload';
     let selectedFileN8n = null;
 
-    // --- UI Context & Navigation ---
+    // --- CONTEXTO DE UI Y NAVEGACIÓN ---
     const dateDisplay = document.getElementById('current-date');
     if (dateDisplay) {
         const now = new Date();
@@ -33,13 +33,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const activeSection = document.getElementById(targetSection);
             if (activeSection) {
                 activeSection.style.display = 'block';
-                // Asegurar que los gráficos se ajusten al tamaño del nuevo contenedor
                 Object.values(chartInstances).forEach(chart => {
                     if (chart && typeof chart.resize === 'function') chart.resize();
                 });
             }
 
-            // Centralización de Headers (Evita parches repetitivos)
             const viewConfigs = {
                 'nav-dashboard': { title: 'Intelligence Resumen', desc: 'Análisis consolidado de patrones detectados en el scraping.' },
                 'nav-cleaner': { title: 'Limpiar Basura CSV', desc: 'Envía tus datos brutos a n8n para estructurar el reporte técnico.' },
@@ -53,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // --- n8n CLEANER LOGIC (CSV Upload) ---
+    // --- LÓGICA DE LIMPIEZA n8n (Subida CSV) ---
     const dropZoneN8n = document.getElementById('drop-zone-n8n');
     const fileInputN8n = document.getElementById('file-input-n8n');
     const fileNameN8n = document.getElementById('file-name-n8n');
@@ -95,39 +93,30 @@ document.addEventListener('DOMContentLoaded', () => {
             statusTextN8n.textContent = '¡Enviado con éxito! Revisa Google Drive.';
             statusTextN8n.style.color = '#00df82';
 
-            // Permitir enviar otro tras 4 segundos
             setTimeout(() => {
                 selectedFileN8n = null;
-                fileInputN8n.value = '';
-                fileNameN8n.innerHTML = '<strong>Haz clic</strong> o arrastra el CSV aquí';
-                convertBtnN8n.style.display = 'none';
-                statusAreaN8n.style.display = 'none';
+                if(fileInputN8n) fileInputN8n.value = '';
+                if(fileNameN8n) fileNameN8n.innerHTML = '<strong>Haz clic</strong> o arrastra el CSV aquí';
+                if(convertBtnN8n) convertBtnN8n.style.display = 'none';
+                if(statusAreaN8n) statusAreaN8n.style.display = 'none';
             }, 4000);
 
         } catch (error) {
             loaderN8n.style.display = 'none';
             convertBtnN8n.disabled = false;
-
-            let errorMsg = 'Error en el envío.';
-            if (error.response && error.response.data && error.response.data.error) {
-                errorMsg = error.response.data.error;
-            } else {
-                errorMsg = error.message;
-            }
-
+            let errorMsg = error.response?.data?.error || error.message;
             statusTextN8n.textContent = errorMsg;
             statusTextN8n.style.color = '#ff4d4d';
-            console.error("n8n Error Detail:", error.response ? error.response.data : error.message);
         }
     });
 
-    // --- EXCEL INTELLIGENCE LOGIC ---
+    // --- LÓGICA DE INTELIGENCIA EXCEL ---
     const dropZone = document.getElementById('drop-zone');
     const fileInput = document.getElementById('file-input');
     const statusText = document.getElementById('upload-status');
- 
-    dropZone?.addEventListener('click', () => fileInput.click());
+    const importModal = document.getElementById('import-modal');
 
+    dropZone?.addEventListener('click', () => fileInput.click());
 
     fileInput?.addEventListener('change', (e) => {
         const file = e.target.files[0];
@@ -137,143 +126,149 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    const showStatus = (msg, type = 'info', persistent = false) => {
+        if (!statusText) return;
+        statusText.style.display = 'block';
+        statusText.textContent = msg;
+        statusText.style.color = type === 'error' ? '#ff4d4d' : (type === 'warning' ? '#fbbc05' : '#00df82');
+        if (!persistent) {
+            setTimeout(() => { statusText.style.display = 'none'; }, 4000);
+        }
+    };
+
     const parseMetaDate = (dateStr) => {
         if (!dateStr) return null;
-
-        const dateStrClean = String(dateStr).trim();
-
-        // Formato 1: Bruto de Meta (desde el XX mes. XXXX)
+        const dateStrClean = String(dateStr).trim().toLowerCase();
         const months = {
             'ene': 0, 'feb': 1, 'mar': 2, 'abr': 3, 'may': 4, 'jun': 5,
             'jul': 6, 'ago': 7, 'sep': 8, 'oct': 9, 'nov': 10, 'dic': 11
         };
 
-        const regex = /desde\s+el\s+(\d+)\s+([a-z]+)\.?\s+(?:de\s+)?(\d+)/i;
+        const regex = /desde\s+el\s+(\d+)\s+([a-z]+)\.?\s+(\d+)/i;
         const match = dateStrClean.match(regex);
 
         if (match) {
             const d = parseInt(match[1]);
-            const mName = match[2].toLowerCase().replace('.', '');
+            const mName = match[2].substring(0, 3);
             const m = months[mName];
             const y = parseInt(match[3]);
-            if (m !== undefined && !isNaN(d) && !isNaN(y)) {
-                return new Date(y, m, d);
-            }
+            if (m !== undefined && !isNaN(d) && !isNaN(y)) return new Date(y, m, d);
         }
 
-        // Formato 2: Ya ordenado (Excel/ISO/Standard)
         const dateObj = new Date(dateStrClean);
-        if (!isNaN(dateObj.getTime())) {
-            return dateObj;
-        }
-
+        if (!isNaN(dateObj.getTime())) return dateObj;
         return null;
     };
 
     const processExcel = (file) => {
-        statusText.style.display = 'block';
-        statusText.textContent = `Analizando Excel: "${file.name}"...`;
+        showStatus(`Analizando: "${file.name}"...`, 'info', true);
         const reader = new FileReader();
+        reader.onerror = () => showStatus("Error de lectura del archivo físico.", "error");
         reader.onload = (e) => {
             try {
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, { type: 'array' });
+                if (!workbook.SheetNames.length) throw new Error("Archivo Excel vacío o corrupto.");
                 const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
                 const rawData = XLSX.utils.sheet_to_json(firstSheet);
+                if (!rawData.length) throw new Error("No se encontraron filas con datos en la hoja.");
+
                 const jsonData = rawData.map(row => {
                     const newRow = {};
                     Object.keys(row).forEach(key => { newRow[key.trim()] = row[key]; });
                     return newRow;
                 });
                 runIntelligence(jsonData);
-                statusText.textContent = "¡Análisis estratégico completado!";
-                setTimeout(() => {
-                    importModal.style.display = 'none';
-                    statusText.style.display = 'none';
-                }, 1500);
             } catch (error) {
-                statusText.textContent = "Error al procesar el Excel.";
-                statusText.style.color = "#ff4d4d";
+                console.error("Critical Analysis Error:", error);
+                showStatus(`Fallo Crítico: ${error.message}`, "error", true);
             }
         };
         reader.readAsArrayBuffer(file);
     };
 
     const runIntelligence = (data) => {
-        if (!data || data.length === 0) return;
+        let missingFieldsCount = 0;
+        const criticalKeys = ['Tiempo Circulación', 'Alcance_Estimado', 'Anunciante'];
 
         const findVal = (row, ...keys) => {
             const rowKeys = Object.keys(row);
             for (const key of keys) {
-                const match = rowKeys.find(k => k.toLowerCase().includes(key.toLowerCase()));
+                const match = rowKeys.find(k => k.toLowerCase() === key.toLowerCase() || k.toLowerCase().includes(key.toLowerCase()));
                 if (match) return row[match];
             }
             return null;
         };
 
-        const getReachBase = (reachStr) => {
-            if (!reachStr) return 1000;
-            const clean = String(reachStr).toLowerCase();
+        const getReachValue = (reachStr) => {
+            if (!reachStr || String(reachStr).includes('#NAME?') || String(reachStr).trim() === '') return null;
+            const clean = String(reachStr).toLowerCase().replace(/\s/g, '');
+            if (clean.includes('-')) {
+                const parts = clean.split('-');
+                const min = getReachValue(parts[0]) || 500;
+                const max = getReachValue(parts[1]) || 1500;
+                return (min + max) / 2;
+            }
             if (clean.includes('k')) return (parseFloat(clean.replace('k', '')) || 1) * 1000;
             if (clean.includes('m')) return (parseFloat(clean.replace('m', '')) || 1) * 1000000;
             const match = clean.match(/(\d+)/);
             return match ? parseInt(match[1]) : 1000;
         };
 
-        const cutoffDate = new Date(2025, 9, 1);
         const now = new Date();
 
         const analyzedAds = data.map(row => {
-            const dateValue = findVal(row, 'Tiempo Circulación', 'tiempo', 'fecha');
-            const startDate = parseMetaDate(dateValue);
+            criticalKeys.forEach(key => { if (!findVal(row, key)) missingFieldsCount++; });
 
+            const dateValue = findVal(row, 'Tiempo Circulación');
+            const startDate = parseMetaDate(dateValue);
             let longevity = 1;
             if (startDate) {
                 longevity = Math.max(1, Math.floor((now - startDate) / (1000 * 60 * 60 * 24)));
-            } else {
-                longevity = 7;
             }
 
-            if (startDate && startDate < cutoffDate) return null;
-
-            let variants = 1;
-            const vRaw = findVal(row, 'Cantidad de Anuncios', 'cantidad', 'variantes');
-            if (vRaw && !isNaN(parseInt(vRaw))) variants = parseInt(vRaw);
-
-            // Inferencia de impacto real
-            const reachBase = getReachBase(findVal(row, 'Alcance_Estimado', 'alcance'));
-            const region = String(findVal(row, 'Región', 'pais', 'region') || '').toLowerCase();
-
-            // Lógica de sospecha Regional (Anti-Vistas Artificiales)
-            let multiplier = 1;
-            if (region.includes('china') || region.includes('vn') || region.includes('ru')) {
-                multiplier = 0.05; // Solo contamos el 5% del impacto si la región no encaja con el negocio local
+            const reachVal = getReachValue(findVal(row, 'Alcance_Estimado'));
+            const reachEst = reachVal || 1000;
+            const variants = parseInt(findVal(row, 'Cantidad de Anuncios')) || 1;
+            const potentialTag = String(findVal(row, 'Potencial') || '').toUpperCase();
+            
+            let finalScore = parseFloat(findVal(row, 'Impresiones/Potencial')) || 0;
+            if (finalScore === 0) {
+                const fT = Math.log10(longevity + 1.5) * 2;
+                const mV = 1 + (variants * 0.15);
+                finalScore = (fT * 5) * mV;
             }
 
-            // Una fórmula más realista: el tiempo mejora la estimación pero no la infla a millones sin sentido.
-            // Crecimiento del 5% diario sobre la base, con un tope de 10 veces la base original.
-            const realisticMultiplier = 1 + (longevity * 0.05);
-            const inferredReach = Math.min(reachBase * 10, Math.floor(reachBase * realisticMultiplier * multiplier));
-            const trustScore = Math.min(100, (longevity * 0.4) + (variants * 7) + (Math.log10(inferredReach + 1) * 2));
+            const inferredReach = Math.floor(reachEst * (1 + (longevity * 0.02)));
 
             return {
                 row: {
-                    'Anunciante': findVal(row, 'Anunciante', 'nt', 'nombre') || 'Anunciante',
-                    'Descripción': findVal(row, 'Descripción', 'desc', 'texto') || 'Sin descripción',
-                    'Videos': findVal(row, 'Videos', 'video', 'url', 'media') || 'N/A',
-                    'pfp': findVal(row, 'pfp', 'perfil', 'avatar') || 'N/A',
+                    'Anunciante': findVal(row, 'Anunciante') || 'Anónimo',
+                    'Descripción': findVal(row, 'Descripción') || 'Sin descripción',
+                    'Videos': findVal(row, 'Videos') || 'N/A',
+                    'pfp': findVal(row, 'pfp') || 'N/A',
+                    'PotencialTag': potentialTag,
                     ...row
                 },
-                processed: { longevity, variants, trustScore, startDate, inferredReach }
+                processed: { longevity, variants, trustScore: finalScore, startDate, inferredReach }
             };
-        }).filter(ad => ad !== null);
+        });
 
-        if (analyzedAds.length === 0) {
-            statusText.textContent = "No se encontraron datos procesables.";
-            statusText.style.color = "#fbbc05";
+        const totalPossibleCritical = data.length * criticalKeys.length;
+        const qualityPercent = Math.round(((totalPossibleCritical - missingFieldsCount) / totalPossibleCritical) * 100);
+
+        if (qualityPercent < 60) {
+            showStatus(`⚠️ Calidad Crítica: ${qualityPercent}% de datos válidos.`, 'warning', true);
+        } else if (qualityPercent < 85) {
+            showStatus(`💡 Análisis completado al ${qualityPercent}%.`, 'info');
         } else {
-            updateDashboardUI(analyzedAds);
+            showStatus("✅ ¡Análisis estratégico exitoso!", 'info');
         }
+
+        setTimeout(() => { 
+            if(importModal) importModal.style.display = 'none'; 
+            updateDashboardUI(analyzedAds);
+        }, qualityPercent < 60 ? 3000 : 1500);
     };
 
     const updateDashboardUI = (ads) => {
@@ -286,10 +281,11 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const avgTrust = ads.reduce((acc, ad) => acc + ad.processed.trustScore, 0) / ads.length;
+        const rawAvg = ads.reduce((acc, ad) => acc + ad.processed.trustScore, 0) / ads.length;
+        const displayScore = rawAvg < 15 ? (rawAvg * 10).toFixed(1) : rawAvg.toFixed(1);
         const totalInferred = ads.reduce((acc, ad) => acc + ad.processed.inferredReach, 0);
 
-        document.getElementById('meta-trust-score').textContent = `${avgTrust.toFixed(1)}/100`;
+        document.getElementById('meta-trust-score').textContent = `${displayScore}/100`;
 
         let reachDisplay = '';
         if (totalInferred >= 1000000) reachDisplay = (totalInferred / 1000000).toFixed(1) + 'M';
@@ -297,24 +293,36 @@ document.addEventListener('DOMContentLoaded', () => {
         else reachDisplay = totalInferred;
 
         document.getElementById('meta-inferred-reach').textContent = `+${reachDisplay} Est.`;
-        document.getElementById('meta-investment-scale').textContent = ads.length > 15 ? 'Agresivo' : (ads.length > 5 ? 'Estable' : 'Creciente');
+
+        const tallies = ads.reduce((acc, ad) => {
+            const tag = ad.row.PotencialTag || '';
+            if (tag.includes('ALTO')) acc.alto++;
+            else if (tag.includes('ESTABLE')) acc.estable++;
+            else acc.testing++;
+            return acc;
+        }, { alto: 0, estable: 0, testing: 0 });
+
+        let scaleText = 'Testing';
+        if (tallies.alto > 0) scaleText = '🔥 Alto Potencial';
+        else if (tallies.estable > tallies.testing) scaleText = '⚡ Estable';
+
+        document.getElementById('meta-investment-scale').textContent = scaleText;
         updateCharts(ads);
         renderAdMockups(ads);
 
-        // Guardar automáticamente en SQL (Neru Sync)
         axios.post('/system/data/commit', { ads }).catch(e => console.error("Sync error"));
     };
 
     const renderAdMockups = (ads) => {
         const container = document.getElementById('fb-ad-container');
         if (!container) return;
-
         container.innerHTML = '';
 
         const winners = ads.sort((a, b) => b.processed.trustScore - a.processed.trustScore).slice(0, 6);
 
         winners.forEach(ad => {
             const row = ad.row;
+            const adId = row['ID'] || '';
             const name = row['Anunciante'] || 'Anunciante';
             const desc = row['Descripción'] || 'Sin descripción disponible.';
             const mediaUrl = row['Videos'] || '';
@@ -324,16 +332,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const adCard = document.createElement('div');
             adCard.className = 'fb-ad-card';
 
-            let mediaHtml = '';
-            if (mediaUrl && mediaUrl !== 'N/A') {
-                if (isVideo) {
-                    mediaHtml = `<video controls style="width:100%;"><source src="${mediaUrl}" type="video/mp4"></video>`;
-                } else {
-                    mediaHtml = `<img src="${mediaUrl}" style="width:100%;">`;
-                }
-            } else {
-                mediaHtml = `<div style="padding: 40px; color: #888; text-align: center;">Media no disponible</div>`;
-            }
+            let mediaHtml = mediaUrl && mediaUrl !== 'N/A' 
+                ? (isVideo ? `<video controls style="width:100%;"><source src="${mediaUrl}" type="video/mp4"></video>` : `<img src="${mediaUrl}" style="width:100%;">`)
+                : `<div style="padding: 40px; color: #888; text-align: center;">Media no disponible</div>`;
 
             adCard.innerHTML = `
                 <div class="fb-ad-header">
@@ -350,7 +351,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         <span class="fb-ad-footer-sub">ANUNCIO ACTIVO</span>
                         <span class="fb-ad-footer-title">${name} - Ver más</span>
                     </div>
-                    <button class="fb-ad-cta">Detalles</button>
+                    <button class="fb-ad-cta" ${adId ? `onclick="window.open('https://www.facebook.com/ads/library/?id=${adId}', '_blank')"` : 'disabled'}>
+                        Detalles
+                    </button>
                 </div>
             `;
             container.appendChild(adCard);
@@ -371,25 +374,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 options: { responsive: true, maintainAspectRatio: false }
             });
         }
+        
         const types = ads.reduce((acc, ad) => {
             const type = ad.row['Tipo_Post'] || 'Video/Imagen';
             acc[type] = (acc[type] || 0) + 1;
             return acc;
         }, {});
+        
         const metaCtx = document.getElementById('metaChart')?.getContext('2d');
         if (metaCtx) {
-            const chartCard = document.getElementById('metaChart').closest('.chart-card');
-
+            const chartCard = metaCtx.canvas.closest('.chart-card');
             if (ads.length === 0) {
                 if (chartInstances.meta) chartInstances.meta.destroy();
-                chartCard.style.opacity = '0.3';
-                chartCard.style.pointerEvents = 'none';
+                if(chartCard) {
+                    chartCard.style.opacity = '0.3';
+                    chartCard.style.pointerEvents = 'none';
+                }
                 return;
             }
-
-            chartCard.style.opacity = '1';
-            chartCard.style.pointerEvents = 'auto';
-
+            if(chartCard) {
+                chartCard.style.opacity = '1';
+                chartCard.style.pointerEvents = 'auto';
+            }
             if (chartInstances.meta) chartInstances.meta.destroy();
             chartInstances.meta = new Chart(metaCtx, {
                 type: 'doughnut',
@@ -404,7 +410,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     updateCharts([]);
 
-     // --- MASTER MODAL CONTROLLER (Unifica Dashboard, Manual, Parches y Preview) ---
+    // --- CONTROLADOR DE MODALES ---
     const modals = {
         import: { el: document.getElementById('import-modal'), open: document.getElementById('open-import'), close: document.getElementById('close-modal') },
         manual: { el: document.getElementById('manual-modal'), open: document.getElementById('open-manual'), close: document.getElementById('close-manual') },
@@ -416,26 +422,23 @@ document.addEventListener('DOMContentLoaded', () => {
         const modal = modals[modalKey];
         if (modal && modal.el) {
             modal.el.style.display = show ? 'flex' : 'none';
-            // Lógica específica para reinicio de pasos si es el manual
             if (modalKey === 'manual' && show) { currentManualStep = 1; updateManualSteps(); }
         }
     };
 
-    // Asignación sistemática de Listeners
     Object.keys(modals).forEach(key => {
         const m = modals[key];
         m.open?.addEventListener('click', () => toggleModal(key, true));
         m.close?.addEventListener('click', () => toggleModal(key, false));
     });
 
-    // Cierre global al hacer click fuera de cualquier modal
     window.addEventListener('click', (e) => {
         Object.keys(modals).forEach(key => {
             if (e.target === modals[key].el) toggleModal(key, false);
         });
     });
 
-    // --- LÓGICA INTERNA DE PASOS (MANUAL) ---
+    // --- NAVEGACIÓN MANUAL (PASOS) ---
     let currentManualStep = 1;
     const totalSteps = 4;
     const nextBtn = document.getElementById('manual-btn-next');
@@ -460,7 +463,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentManualStep > 1) { currentManualStep--; updateManualSteps(); }
     });
 
-    // --- LÓGICA DE VISTA PREVIA DE IMÁGENES ---
+    // --- VISTA PREVIA DE IMÁGENES ---
     document.querySelectorAll('.previewable-img').forEach(img => {
         img.addEventListener('click', () => {
             const previewContent = document.getElementById('preview-img-content');

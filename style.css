@@ -112,7 +112,7 @@ body {
     letter-spacing: -0.5px;
 }
 
- /* Coming Soon Placeholders */
+/* Coming Soon Placeholders */
 .coming-soon-container {
     display: flex;
     flex-direction: column;
@@ -555,4 +555,5 @@ body {
     font-size: 0.87rem;
     color: #050505;
     border: none;
+    cursor: pointer;
 }
