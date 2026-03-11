@@ -1,16 +1,19 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
 
 :root {
-    /* Color Palette */
-    --bg-dark: #080a0c;
-    --bg-card: rgba(18, 22, 28, 0.7);
-    --primary-green: #00df82;
-    --primary-green-glow: rgba(0, 223, 130, 0.2);
-    --text-main: #ffffff;
-    --text-muted: #94a3b8;
-    --border-color: rgba(255, 255, 255, 0.08);
-    --sidebar-width: 260px;
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Color Palette - Premium Dark Mode */
+    --bg-dark: #05070a;
+    --bg-card: rgba(18, 22, 28, 0.6);
+    --primary-green: #00ff95;
+    --primary-green-glow: rgba(0, 255, 149, 0.25);
+    --primary-blue: #1877f2;
+    --accent-glow: linear-gradient(135deg, var(--primary-green), #00d4ff);
+    --text-main: #f8fafc;
+    --text-muted: #10b981;
+    /* Un poco mas brillante para legibilidad */
+    --border-color: rgba(255, 255, 255, 0.05);
+    --sidebar-width: 280px;
+    --transition-smooth: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 * {
@@ -278,8 +281,25 @@ body {
 
 .stat-card:hover {
     border-color: var(--primary-green);
-    transform: translateY(-5px);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 20px var(--primary-green-glow);
+    background: rgba(0, 255, 149, 0.03);
+}
+
+.stat-card::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.03) 0%, transparent 70%);
+    opacity: 0;
+    transition: var(--transition-smooth);
+}
+
+.stat-card:hover::after {
+    opacity: 1;
 }
 
 .platform-badge {
@@ -294,16 +314,6 @@ body {
 .meta-badge {
     background: rgba(24, 119, 242, 0.2);
     color: #1877f2;
-}
-
-.tiktok-badge {
-    background: rgba(255, 255, 255, 0.1);
-    color: #ffffff;
-}
-
-.google-badge {
-    background: rgba(66, 133, 244, 0.2);
-    color: #4285f4;
 }
 
 .stat-value {
@@ -433,6 +443,70 @@ body {
     grid-template-columns: 1.5fr 1fr;
     gap: 1.5rem;
     margin-top: 2rem;
+}
+
+/* Manual Stepper Polish */
+.manual-progress-bar {
+    width: 100%;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    margin-bottom: 2rem;
+    overflow: hidden;
+}
+
+.manual-progress-inner {
+    height: 100%;
+    background: var(--accent-glow);
+    width: 25%;
+    transition: var(--transition-smooth);
+    box-shadow: 0 0 10px var(--primary-green-glow);
+}
+
+.manual-step h3 {
+    font-size: 1.4rem;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* Media Archivist Section */
+.archivist-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: linear-gradient(90deg, rgba(0, 255, 149, 0.05), transparent);
+    border-radius: 16px;
+    border-left: 4px solid var(--primary-green);
+}
+
+.archive-btn {
+    padding: 10px 20px;
+    background: var(--primary-green);
+    color: #000;
+    border: none;
+    border-radius: 10px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: var(--transition-smooth);
+}
+
+.archive-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 25px var(--primary-green-glow);
+}
+
+.archive-btn:disabled {
+    background: #2d3748;
+    color: #718096;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
 }
 
 .inference-card-body ul li {

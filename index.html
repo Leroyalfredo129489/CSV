@@ -63,25 +63,6 @@
                         Meta Ads
                     </a>
                 </li>
-                <li class="nav-item">
-                    <a href="#" class="nav-link" id="nav-tiktok">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"></path>
-                        </svg>
-                        TikTok Ads
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="#" class="nav-link" id="nav-google">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <path d="M12 8l4 4-4 4M8 12h7"></path>
-                        </svg>
-                        Google Ads
-                    </a>
-                </li>
                 <li class="nav-item" style="margin-top: auto; padding-top: 2rem;">
                 </li>
                 <li class="nav-item">
@@ -119,6 +100,16 @@
                         Abrir Carpeta Drive
                     </a>
                 </li>
+                <li class="nav-item" style="margin-top: 1rem;">
+                    <button class="nav-link" id="open-compliance"
+                        style="width: 100%; justify-content: flex-start; background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 0.75rem; opacity: 0.7;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        </svg>
+                        Aviso Ético y Legal
+                    </button>
+                </li>
             </nav>
         </aside>
 
@@ -134,21 +125,11 @@
 
             <!-- Overview Section (Dashboard) -->
             <div id="section-dashboard" class="dashboard-section">
-                <section class="stats-grid">
+                <section class="stats-grid" style="grid-template-columns: 1fr;">
                     <div class="stat-card">
-                        <span class="platform-badge meta-badge">Meta Ads</span>
-                        <div class="stat-label">Ad Trust Promedio</div>
+                        <span class="platform-badge meta-badge">Meta Ads Intelligence</span>
+                        <div class="stat-label">Ad Trust Promedio Detectado</div>
                         <div class="stat-value" id="dash-meta-spend">0/100</div>
-                    </div>
-                    <div class="stat-card">
-                        <span class="platform-badge tiktok-badge">TikTok Ads</span>
-                        <div class="stat-label">Saturación</div>
-                        <div class="stat-value" id="dash-tiktok-conv">N/A</div>
-                    </div>
-                    <div class="stat-card">
-                        <span class="platform-badge google-badge">Google Ads</span>
-                        <div class="stat-label">Cuota de Voz</div>
-                        <div class="stat-value" id="dash-google-ctr">0%</div>
                     </div>
                 </section>
 
@@ -244,31 +225,27 @@
 
                 <!-- SECCIÓN DE MOCKUPS DE FACEBOOK ADS -->
                 <div style="margin-top: 3rem;">
-                    <h2 style="margin-bottom: 1.5rem;">Previsualización de Ganadores</h2>
+                    <div class="archivist-header">
+                        <div>
+                            <h2 style="margin-bottom: 0.2rem;">📦 Centro de Archivador</h2>
+                            <p style="font-size: 0.85rem; color: var(--text-muted);">Gestiona y descarga los materiales
+                                creativos detectados.</p>
+                        </div>
+                        <button class="archive-btn" id="download-all-media" disabled>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            Descargar Todo (.zip)
+                        </button>
+                    </div>
                     <div id="fb-ad-container" class="fb-ad-grid">
                         <!-- Los anuncios se cargarán aquí dinámicamente -->
                         <p style="color: var(--text-muted);">Sube un archivo Excel para ver los anuncios aquí.</p>
                     </div>
-                </div>
-            </div>
-
-            <!-- TikTok Ads Section -->
-            <div id="section-tiktok" class="dashboard-section" style="display: none;">
-                <div class="coming-soon-container">
-                    <span class="coming-soon-icon">🎵</span>
-                    <h2>TikTok Ads Analytics</h2>
-                    <p>Próximamente: Integración avanzada de engagement y tendencias virales.</p>
-                    <div class="coming-soon-badge">Coming Soon</div>
-                </div>
-            </div>
-
-            <!-- Google Ads Section -->
-            <div id="section-google" class="dashboard-section" style="display: none;">
-                <div class="coming-soon-container">
-                    <span class="coming-soon-icon">🔍</span>
-                    <h2>Google Ads Analytics</h2>
-                    <p>Próximamente: Seguimiento de Search, Shopping y cuota de mercado.</p>
-                    <div class="coming-soon-badge">Coming Soon</div>
+                    <!-- Secciones eliminadas -->
                 </div>
             </div>
         </main>
@@ -325,14 +302,15 @@
 
                         <h1 style="color: rgb(75, 201, 75);">Changelogs</h1>
                         <div>
-                            <p>se corrigio pequeños bugs</p>
-                            <p>se agregaron algunas caracteristicas</p>
+                            <p>Se corrigieron pequeños bugs.</p>
+                            <p>Se eliminaron secciones obsoletas (Google/TikTok).</p>
+                            <p>Se añadió el Archivador de Medios (.zip).</p>
+                            <p>Se integró el sistema de IDs únicos en SQLite.</p>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
     </div>
     <!-- Manual de Usuario Modal -->
     <div class="modal-overlay" id="manual-modal">
@@ -340,10 +318,14 @@
             style="max-width: 550px; max-height: 85vh; overflow-y: auto; padding: 2.5rem; display: flex; flex-direction: column;">
             <button class="close-modal" id="close-manual"
                 style="position: absolute; right: 20px; top: 20px;">&times;</button>
-            <div class="manual-header" style="text-align: center; margin-bottom: 2rem;">
+            <div class="manual-header" style="text-align: center; margin-bottom: 1rem;">
                 <h2 style="color: var(--primary-green); font-size: 1.5rem;">📖 Manual de Usuario</h2>
                 <p style="color: var(--text-muted); font-size: 0.9rem;">Paso <span id="current-step-display">1</span> de
-                    4</p>
+                    5</p>
+            </div>
+
+            <div class="manual-progress-bar">
+                <div class="manual-progress-inner" id="manual-progress"></div>
             </div>
 
             <div class="manual-body" style="flex: 1; text-align: left; line-height: 1.6;">
@@ -422,6 +404,25 @@
                     </div>
                 </div>
 
+                <!-- PASO 5: ÉTICA Y MARCO LEGAL -->
+                <div class="manual-step" id="manual-step-5" style="display: none;">
+                    <h3 style="margin-bottom: 1rem;">🛡️ 5. Ética y Cumplimiento</h3>
+                    <div
+                        style="background: rgba(0, 223, 130, 0.05); border: 1px solid var(--primary-green); padding: 1.5rem; border-radius: 12px; font-size: 0.9rem; color: white;">
+                        <p style="margin-bottom: 1rem;"><strong>Transparencia:</strong> Esta herramienta ha sido
+                            diseñada exclusivamente con <strong>fines educativos y de análisis de marketing</strong>,
+                            sin fines de lucro.</p>
+                        <p style="margin-bottom: 1rem;"><strong>Protección de Datos:</strong> El sistema solo procesa
+                            información que Meta Ads Library hace <strong>pública</strong> para fines de transparencia
+                            publicitaria. <strong>No</strong> se extraen datos sensibles del anunciante como correos
+                            electrónicos, teléfonos, direcciones o IPs.</p>
+                        <p style="margin-bottom: 0;"><strong>Privacidad:</strong> Al no recopilar Información de
+                            Identificación Personal (PII), el uso de esta herramienta se mantiene dentro de los márgenes
+                            éticos de la investigación competitiva de mercado, respetando la privacidad de los
+                            anunciantes.</p>
+                    </div>
+                </div>
+
             </div>
 
             <div class="manual-footer"
@@ -440,6 +441,45 @@
             style="position: absolute; top: 20px; right: 40px; color: white; font-size: 40px; font-weight: bold; cursor: pointer; transition: 0.3s;">&times;</span>
         <img id="preview-img-content"
             style="margin: auto; display: block; max-width: 90%; max-height: 90%; border-radius: 8px; box-shadow: 0 0 20px rgba(0,0,0,0.5);">
+    </div>
+
+    <!-- Aviso Ético y Legal Modal -->
+    <div class="modal-overlay" id="compliance-modal">
+        <div class="modal-content" style="max-width: 500px; border-left: 4px solid var(--primary-green);">
+            <button class="close-modal" id="close-compliance-modal">&times;</button>
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <span style="font-size: 3rem; display: block; margin-bottom: 1rem;">🛡️</span>
+                <h2 style="color: var(--primary-green);">Marco de Cumplimiento</h2>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">Política de Uso de Datos y Ética de Scraping</p>
+            </div>
+
+            <div style="line-height: 1.6; font-size: 0.9rem; color: #f8fafc;">
+                <div
+                    style="margin-bottom: 1.5rem; padding: 1rem; background: rgba(255,255,255,0.03); border-radius: 12px;">
+                    <strong style="color: var(--primary-green); display: block; margin-bottom: 5px;">📍 Fines del
+                        Proyecto:</strong>
+                    Este sistema ha sido desarrollado con fines exclusivamente <strong>analíticos y de investigación de
+                        mercado</strong>, sin ánimo de lucro.
+                </div>
+
+                <div
+                    style="margin-bottom: 1.5rem; padding: 1rem; background: rgba(255,255,255,0.03); border-radius: 12px;">
+                    <strong style="color: var(--primary-green); display: block; margin-bottom: 5px;">⚖️ Normas de Meta
+                        (Ads Library):</strong>
+                    Se cumple estrictamente con los términos de transparencia de Meta. Solo se recopila información que
+                    es <strong>pública</strong> para cualquier usuario. No se realizan intentos de acceso a datos
+                    privados, cuentas o contraseñas.
+                </div>
+
+                <div
+                    style="padding: 1rem; background: rgba(0, 255, 149, 0.05); border-radius: 12px; border: 1px dashed var(--primary-green);">
+                    <strong style="color: var(--primary-green); display: block; margin-bottom: 5px;">🚫 No se extrae
+                        PII:</strong>
+                    La herramienta <strong>ignora</strong> correos electrónicos, números telefónicos y direcciones de
+                    facturación, garantizando la privacidad de los anunciantes y cumpliendo con el RGPD/LSDP.
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="main.js"></script>

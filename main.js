@@ -2,6 +2,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- CONFIGURACIÓN DE SERVIDOR ---
     const SERVER_URL = '/upload';
     let selectedFileN8n = null;
+    let currentMediaUrls = []; // Almacén de URLs de la sesión actual
+
+    // --- CONFIGURACIÓN ESTRATÉGICA (AJUSTABLE POR EL CLIENTE/DEV) ---
+    const STRATEGY_CONFIG = {
+        WEIGHT_LONGEVITY_BASE: 1.5,
+        WEIGHT_LONGEVITY_MULTIPLIER: 2,
+        WEIGHT_VARIANT_BONUS: 0.15,
+        SCORE_MULTIPLIER: 5,
+        REACH_DEFAULT: 1000,
+        REACH_GROWTH_RATE: 0.02
+    };
 
     // --- CONTEXTO DE UI Y NAVEGACIÓN ---
     const dateDisplay = document.getElementById('current-date');
@@ -95,10 +106,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             setTimeout(() => {
                 selectedFileN8n = null;
-                if(fileInputN8n) fileInputN8n.value = '';
-                if(fileNameN8n) fileNameN8n.innerHTML = '<strong>Haz clic</strong> o arrastra el CSV aquí';
-                if(convertBtnN8n) convertBtnN8n.style.display = 'none';
-                if(statusAreaN8n) statusAreaN8n.style.display = 'none';
+                if (fileInputN8n) fileInputN8n.value = '';
+                if (fileNameN8n) fileNameN8n.innerHTML = '<strong>Haz clic</strong> o arrastra el CSV aquí';
+                if (convertBtnN8n) convertBtnN8n.style.display = 'none';
+                if (statusAreaN8n) statusAreaN8n.style.display = 'none';
             }, 4000);
 
         } catch (error) {
@@ -228,18 +239,19 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const reachVal = getReachValue(findVal(row, 'Alcance_Estimado'));
-            const reachEst = reachVal || 1000;
+            const reachEst = reachVal || STRATEGY_CONFIG.REACH_DEFAULT;
             const variants = parseInt(findVal(row, 'Cantidad de Anuncios')) || 1;
             const potentialTag = String(findVal(row, 'Potencial') || '').toUpperCase();
-            
+
             let finalScore = parseFloat(findVal(row, 'Impresiones/Potencial')) || 0;
             if (finalScore === 0) {
-                const fT = Math.log10(longevity + 1.5) * 2;
-                const mV = 1 + (variants * 0.15);
-                finalScore = (fT * 5) * mV;
+                // FÓRMULA CALIBRADA USANDO OBJETO DE CONFIGURACIÓN
+                const fT = Math.log10(longevity + STRATEGY_CONFIG.WEIGHT_LONGEVITY_BASE) * STRATEGY_CONFIG.WEIGHT_LONGEVITY_MULTIPLIER;
+                const mV = 1 + (variants * STRATEGY_CONFIG.WEIGHT_VARIANT_BONUS);
+                finalScore = (fT * STRATEGY_CONFIG.SCORE_MULTIPLIER) * mV;
             }
 
-            const inferredReach = Math.floor(reachEst * (1 + (longevity * 0.02)));
+            const inferredReach = Math.floor(reachEst * (1 + (longevity * STRATEGY_CONFIG.REACH_GROWTH_RATE)));
 
             return {
                 row: {
@@ -254,6 +266,17 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         });
 
+        // RECOLECCIÓN DE MEDIOS PARA EL ARCHIVADOR
+        currentMediaUrls = analyzedAds
+            .map(ad => ad.row['Videos'])
+            .filter(url => url && url !== 'N/A' && (url.includes('http') || url.includes('fbcdn')));
+
+        const downloadBtn = document.getElementById('download-all-media');
+        if (downloadBtn) {
+            downloadBtn.disabled = currentMediaUrls.length === 0;
+            downloadBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Descargar ${currentMediaUrls.length} Medios (.zip)`;
+        }
+
         const totalPossibleCritical = data.length * criticalKeys.length;
         const qualityPercent = Math.round(((totalPossibleCritical - missingFieldsCount) / totalPossibleCritical) * 100);
 
@@ -265,17 +288,19 @@ document.addEventListener('DOMContentLoaded', () => {
             showStatus("✅ ¡Análisis estratégico exitoso!", 'info');
         }
 
-        setTimeout(() => { 
-            if(importModal) importModal.style.display = 'none'; 
+        setTimeout(() => {
+            if (importModal) importModal.style.display = 'none';
             updateDashboardUI(analyzedAds);
         }, qualityPercent < 60 ? 3000 : 1500);
     };
 
     const updateDashboardUI = (ads) => {
+        const scoreDashEl = document.getElementById('dash-meta-spend');
         if (!ads || ads.length === 0) {
             document.getElementById('meta-trust-score').textContent = '0.0';
             document.getElementById('meta-inferred-reach').textContent = '0';
             document.getElementById('meta-investment-scale').textContent = 'Nivel --';
+            if (scoreDashEl) scoreDashEl.textContent = '0/100';
             updateCharts([]);
             renderAdMockups([]);
             return;
@@ -285,7 +310,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const displayScore = rawAvg < 15 ? (rawAvg * 10).toFixed(1) : rawAvg.toFixed(1);
         const totalInferred = ads.reduce((acc, ad) => acc + ad.processed.inferredReach, 0);
 
-        document.getElementById('meta-trust-score').textContent = `${displayScore}/100`;
+        const finalScoreText = `${displayScore}/100`;
+        document.getElementById('meta-trust-score').textContent = finalScoreText;
+        if (scoreDashEl) scoreDashEl.textContent = finalScoreText;
 
         let reachDisplay = '';
         if (totalInferred >= 1000000) reachDisplay = (totalInferred / 1000000).toFixed(1) + 'M';
@@ -332,7 +359,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const adCard = document.createElement('div');
             adCard.className = 'fb-ad-card';
 
-            let mediaHtml = mediaUrl && mediaUrl !== 'N/A' 
+            let mediaHtml = mediaUrl && mediaUrl !== 'N/A'
                 ? (isVideo ? `<video controls style="width:100%;"><source src="${mediaUrl}" type="video/mp4"></video>` : `<img src="${mediaUrl}" style="width:100%;">`)
                 : `<div style="padding: 40px; color: #888; text-align: center;">Media no disponible</div>`;
 
@@ -374,25 +401,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 options: { responsive: true, maintainAspectRatio: false }
             });
         }
-        
+
         const types = ads.reduce((acc, ad) => {
             const type = ad.row['Tipo_Post'] || 'Video/Imagen';
             acc[type] = (acc[type] || 0) + 1;
             return acc;
         }, {});
-        
+
         const metaCtx = document.getElementById('metaChart')?.getContext('2d');
         if (metaCtx) {
             const chartCard = metaCtx.canvas.closest('.chart-card');
             if (ads.length === 0) {
                 if (chartInstances.meta) chartInstances.meta.destroy();
-                if(chartCard) {
+                if (chartCard) {
                     chartCard.style.opacity = '0.3';
                     chartCard.style.pointerEvents = 'none';
                 }
                 return;
             }
-            if(chartCard) {
+            if (chartCard) {
                 chartCard.style.opacity = '1';
                 chartCard.style.pointerEvents = 'auto';
             }
@@ -415,7 +442,8 @@ document.addEventListener('DOMContentLoaded', () => {
         import: { el: document.getElementById('import-modal'), open: document.getElementById('open-import'), close: document.getElementById('close-modal') },
         manual: { el: document.getElementById('manual-modal'), open: document.getElementById('open-manual'), close: document.getElementById('close-manual') },
         patch: { el: document.getElementById('patch-notes-modal'), open: document.querySelector('.ver'), close: document.getElementById('close-patch-notes') },
-        preview: { el: document.getElementById('image-preview-modal'), close: document.getElementById('close-image-preview') }
+        preview: { el: document.getElementById('image-preview-modal'), close: document.getElementById('close-image-preview') },
+        compliance: { el: document.getElementById('compliance-modal'), open: document.getElementById('open-compliance'), close: document.getElementById('close-compliance-modal') }
     };
 
     const toggleModal = (modalKey, show = true) => {
@@ -440,18 +468,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- NAVEGACIÓN MANUAL (PASOS) ---
     let currentManualStep = 1;
-    const totalSteps = 4;
+    const totalSteps = 5;
     const nextBtn = document.getElementById('manual-btn-next');
     const prevBtn = document.getElementById('manual-btn-prev');
     const stepDisplay = document.getElementById('current-step-display');
+    const progressBar = document.getElementById('manual-progress');
 
     function updateManualSteps() {
         document.querySelectorAll('.manual-step').forEach((s, i) => {
             s.style.display = (i + 1 === currentManualStep) ? 'block' : 'none';
         });
         if (stepDisplay) stepDisplay.textContent = currentManualStep;
+        if (progressBar) progressBar.style.width = `${(currentManualStep / totalSteps) * 100}%`;
         if (prevBtn) prevBtn.style.visibility = (currentManualStep === 1) ? 'hidden' : 'visible';
-        if (nextBtn) nextBtn.textContent = (currentManualStep === totalSteps) ? '¡Entendido! Cerrar' : 'Siguiente →';
+        if (nextBtn) nextBtn.textContent = (currentManualStep === totalSteps) ? '¡Entendido! Finalizar' : 'Siguiente →';
     }
 
     nextBtn?.addEventListener('click', () => {
@@ -463,6 +493,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentManualStep > 1) { currentManualStep--; updateManualSteps(); }
     });
 
+
     // --- VISTA PREVIA DE IMÁGENES ---
     document.querySelectorAll('.previewable-img').forEach(img => {
         img.addEventListener('click', () => {
@@ -472,5 +503,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 toggleModal('preview', true);
             }
         });
+    });
+    // --- LÓGICA DE DESCARGA MASIVA (ARCHIVADOR) ---
+    const downloadMediaBtn = document.getElementById('download-all-media');
+    downloadMediaBtn?.addEventListener('click', async () => {
+        if (currentMediaUrls.length === 0) return;
+
+        downloadMediaBtn.disabled = true;
+        downloadMediaBtn.textContent = '📦 Preparando ZIP...';
+
+        try {
+            const response = await axios.post('/system/media/archive', { mediaUrls: currentMediaUrls }, { responseType: 'blob' });
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `anuncios_media_${Date.now()}.zip`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            showStatus("✅ ¡Descarga masiva completada!", "info");
+        } catch (error) {
+            console.error("Archive Error:", error);
+            showStatus("❌ Error al crear el archivo de medios.", "error");
+        } finally {
+            downloadMediaBtn.disabled = false;
+            downloadMediaBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Descargar ${currentMediaUrls.length} Medios (.zip)`;
+        }
     });
 });
