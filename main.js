@@ -6,12 +6,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- CONFIGURACIÓN ESTRATÉGICA (AJUSTABLE POR EL CLIENTE/DEV) ---
     const STRATEGY_CONFIG = {
-        WEIGHT_LONGEVITY_BASE: 1.5,
-        WEIGHT_LONGEVITY_MULTIPLIER: 2,
-        WEIGHT_VARIANT_BONUS: 0.15,
-        SCORE_MULTIPLIER: 5,
-        REACH_DEFAULT: 1000,
-        REACH_GROWTH_RATE: 0.02
+        WEIGHT_LONGEVITY_BASE: 10,  // Suavizador matemático para evitar puntajes absurdos
+        SCORE_MULTIPLIER: 22,       // Multiplicador subido para compensar la normalización severa
+        REACH_DEFAULT: 500,         // Alcance mínimo garantizado
+        REACH_MICRO: 50             // Para anuncios locales muy de nicho o testeos puros (<100)
     };
 
     // --- CONTEXTO DE UI Y NAVEGACIÓN ---
@@ -139,11 +137,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const showStatus = (msg, type = 'info', persistent = false) => {
         if (!statusText) return;
-        statusText.style.display = 'block';
-        statusText.textContent = msg;
-        statusText.style.color = type === 'error' ? '#ff4d4d' : (type === 'warning' ? '#fbbc05' : '#00df82');
+        statusText.style.display = 'flex';
+        statusText.style.borderLeftColor = type === 'error' ? '#ff4d4d' : (type === 'warning' ? '#fbbc05' : '#00ff95');
+        statusText.innerHTML = `<span>${type === 'error' ? '❌' : (type === 'warning' ? '⚠️' : '✅')}</span> ${msg}`;
+
+        setTimeout(() => statusText.classList.add('show-toast'), 10);
+
         if (!persistent) {
-            setTimeout(() => { statusText.style.display = 'none'; }, 4000);
+            setTimeout(() => {
+                statusText.classList.remove('show-toast');
+                setTimeout(() => statusText.style.display = 'none', 400); // Esperar que acabe la transición
+            }, 4000);
         }
     };
 
@@ -214,16 +218,29 @@ document.addEventListener('DOMContentLoaded', () => {
         const getReachValue = (reachStr) => {
             if (!reachStr || String(reachStr).includes('#NAME?') || String(reachStr).trim() === '') return null;
             const clean = String(reachStr).toLowerCase().replace(/\s/g, '');
-            if (clean.includes('-')) {
-                const parts = clean.split('-');
-                const min = getReachValue(parts[0]) || 500;
-                const max = getReachValue(parts[1]) || 1500;
+
+            if (clean.includes('<100') || clean.includes('impresionesbajo')) return STRATEGY_CONFIG.REACH_MICRO;
+            if (clean.includes('<1k')) return 500;
+
+            const isK = clean.includes('k');
+            const isM = clean.includes('m');
+            const multiplier = isM ? 1000000 : (isK ? 1000 : 1);
+
+            // Rango ej: 10k-50k
+            const rangeMatch = clean.match(/(\d+)k?\s*-\s*(\d+)k?/);
+            if (rangeMatch) {
+                const min = (parseInt(rangeMatch[1]) || 1) * multiplier;
+                const max = (parseInt(rangeMatch[2]) || 1) * multiplier;
                 return (min + max) / 2;
             }
-            if (clean.includes('k')) return (parseFloat(clean.replace('k', '')) || 1) * 1000;
-            if (clean.includes('m')) return (parseFloat(clean.replace('m', '')) || 1) * 1000000;
-            const match = clean.match(/(\d+)/);
-            return match ? parseInt(match[1]) : 1000;
+
+            // Único + ej: +500k (Global)
+            const singleMatch = clean.match(/\+?(\d+)k?/);
+            if (singleMatch) {
+                return parseInt(singleMatch[1]) * multiplier;
+            }
+
+            return null;
         };
 
         const now = new Date();
@@ -240,18 +257,55 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const reachVal = getReachValue(findVal(row, 'Alcance_Estimado'));
             const reachEst = reachVal || STRATEGY_CONFIG.REACH_DEFAULT;
-            const variants = parseInt(findVal(row, 'Cantidad de Anuncios')) || 1;
+            const rawVariants = String(findVal(row, 'Cantidad de Anuncios') || '1');
+            const variants = rawVariants.toLowerCase().includes('varias') ? 2 : (parseInt(rawVariants) || 1);
             const potentialTag = String(findVal(row, 'Potencial') || '').toUpperCase();
 
-            let finalScore = parseFloat(findVal(row, 'Impresiones/Potencial')) || 0;
-            if (finalScore === 0) {
-                // FÓRMULA CALIBRADA USANDO OBJETO DE CONFIGURACIÓN
-                const fT = Math.log10(longevity + STRATEGY_CONFIG.WEIGHT_LONGEVITY_BASE) * STRATEGY_CONFIG.WEIGHT_LONGEVITY_MULTIPLIER;
-                const mV = 1 + (variants * STRATEGY_CONFIG.WEIGHT_VARIANT_BONUS);
-                finalScore = (fT * STRATEGY_CONFIG.SCORE_MULTIPLIER) * mV;
+            // Análisis del "Tamaño de la Empresa" basado en su volumen total de anuncios en el archivo
+            const totalBrandVariations = data.reduce((acc, r) => acc + (parseInt(findVal(r, 'Cantidad de Anuncios')) || 1), 0);
+            const isGlobalBrand = totalBrandVariations >= 20 || data.length >= 10; // Si Coca-Cola lanza 20 variantes o tiene >10 filas, es global.
+
+            // Ignoramos la matemática defectuosa de n8n para forzar nuestro motor de IA
+            let finalScore = 0;
+
+            // --- NUEVA LÓGICA DE CONDICIONES (REGLAS DE NEGOCIO REALISTAS - LOCAL VS GLOBAL) ---
+            let isTest = false;
+            let isZombie = false;
+            let scoreMultiplier = 1.0;
+            let reachMultiplier = 1.0;
+
+            if (longevity > 30 && variants === 1) {
+                // Anuncio "Zombie": Mucho tiempo pero sin escalar
+                isZombie = true;
+                scoreMultiplier = isGlobalBrand ? 0.6 : 0.3; // Global "zombie" = Retargeting/Brand Awareness. Local = Olvidado.
+                reachMultiplier = 1.1;
+            } else if (longevity > 30 && variants > 1) {
+                // Anuncio Ganador: Probado y escalando
+                scoreMultiplier = 1.0 + (variants * (isGlobalBrand ? 0.2 : 0.15));
+                reachMultiplier = 1.0 + (longevity * (isGlobalBrand ? 0.02 : 0.015));
+            } else if (longevity <= 14 && variants === 1) {
+                // Test Puro: Apenas iniciado
+                isTest = true;
+                scoreMultiplier = isGlobalBrand ? 0.8 : 0.4; // Un test de CocaCola arranca con más presupuesto que una peluquería.
+                reachMultiplier = isGlobalBrand ? 1.05 : 1.0;
+            } else if (longevity <= 14 && variants > 1) {
+                // Fase de A/B Testing Agresivo
+                scoreMultiplier = (isGlobalBrand ? 1.0 : 0.8) + (variants * 0.05);
+                reachMultiplier = 1.0 + (longevity * 0.005);
+            } else {
+                // Anuncios regulares (15-30 días)
+                scoreMultiplier = (isGlobalBrand ? 0.95 : 0.9) + (variants * 0.05);
+                reachMultiplier = 1.0 + (longevity * 0.008);
             }
 
-            const inferredReach = Math.floor(reachEst * (1 + (longevity * STRATEGY_CONFIG.REACH_GROWTH_RATE)));
+            // Base: log10 para que los días grandes no exploten el score (ej. 100 días = log10(110) ≈ 2.04)
+            const baseScore = Math.log10(longevity + STRATEGY_CONFIG.WEIGHT_LONGEVITY_BASE) * STRATEGY_CONFIG.SCORE_MULTIPLIER;
+            finalScore = baseScore * scoreMultiplier;
+
+            // Cap al score para no exceder 99.9
+            finalScore = Math.min(finalScore, 99.9);
+
+            const inferredReach = Math.floor(reachEst * reachMultiplier);
 
             return {
                 row: {
@@ -259,10 +313,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     'Descripción': findVal(row, 'Descripción') || 'Sin descripción',
                     'Videos': findVal(row, 'Videos') || 'N/A',
                     'pfp': findVal(row, 'pfp') || 'N/A',
-                    'PotencialTag': potentialTag,
-                    ...row
+                    'ID': findVal(row, 'ID') || '',
+                    'PotencialTag': potentialTag || (finalScore >= 50 ? 'ALTO' : (finalScore >= 25 ? 'ESTABLE' : 'TESTING')),
+                    'Alcance_Estimado': reachEst
                 },
-                processed: { longevity, variants, trustScore: finalScore, startDate, inferredReach }
+                processed: { longevity, inferredReach, trustScore: finalScore }
             };
         });
 
@@ -307,12 +362,25 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const rawAvg = ads.reduce((acc, ad) => acc + ad.processed.trustScore, 0) / ads.length;
-        const displayScore = rawAvg < 15 ? (rawAvg * 10).toFixed(1) : rawAvg.toFixed(1);
+        const displayScore = rawAvg.toFixed(1); // Muestra el score real sin el artificial *10
         const totalInferred = ads.reduce((acc, ad) => acc + ad.processed.inferredReach, 0);
 
         const finalScoreText = `${displayScore}/100`;
         document.getElementById('meta-trust-score').textContent = finalScoreText;
         if (scoreDashEl) scoreDashEl.textContent = finalScoreText;
+
+        // --- ACTUALIZACIÓN DE TÍTULO DINÁMICO ---
+        const firstAd = ads[0];
+        const advertiser = firstAd?.row?.Anunciante || 'Anunciante Desconocido';
+        const mainTitle = document.getElementById('meta-main-title');
+        const mainSubtitle = document.getElementById('meta-subtitle');
+
+        if (mainTitle) {
+            mainTitle.innerHTML = `Análisis: <span style="color: var(--primary-green)">${advertiser}</span>`;
+        }
+        if (mainSubtitle) {
+            mainSubtitle.textContent = `Inteligencia Competitiva sobre ${ads.length} anuncios analizados de la Biblioteca de Meta.`;
+        }
 
         let reachDisplay = '';
         if (totalInferred >= 1000000) reachDisplay = (totalInferred / 1000000).toFixed(1) + 'M';
@@ -395,18 +463,38 @@ document.addEventListener('DOMContentLoaded', () => {
             chartInstances.main = new Chart(mainCtx, {
                 type: 'bar',
                 data: {
-                    labels: topAds.length > 0 ? topAds.map(ad => (ad.row['Anunciante'] || 'Anónimo').substring(0, 15)) : ['Sin datos'],
+                    labels: topAds.length > 0 ? topAds.map(ad => {
+                        const name = (ad.row['Anunciante'] || 'Anónimo').substring(0, 10);
+                        const id = String(ad.row['ID'] || '').slice(-4);
+                        return id ? `${name} (#${id})` : name;
+                    }) : ['Sin datos'],
                     datasets: [{ label: 'Días Activo', data: topAds.length > 0 ? topAds.map(ad => ad.processed.longevity) : [0], backgroundColor: '#00df82', borderRadius: 8 }]
                 },
                 options: { responsive: true, maintainAspectRatio: false }
             });
         }
 
-        const types = ads.reduce((acc, ad) => {
-            const type = ad.row['Tipo_Post'] || 'Video/Imagen';
-            acc[type] = (acc[type] || 0) + 1;
+        // --- LÓGICA DE GANADORES (Gráfico de Anillo) ---
+        // Filtramos anuncios ganadores (Mucha longevidad o Score alto)
+        let winnerAds = ads.filter(ad => ad.processed.longevity >= 21 || ad.processed.trustScore > 40);
+        
+        // Si no hay ganadores claros en este Excel, agarramos los mejores 5 (Fallback)
+        if (winnerAds.length === 0) {
+            winnerAds = [...ads].sort((a, b) => b.processed.trustScore - a.processed.trustScore).slice(0, 5);
+        }
+
+        // Agrupamos el Impacto total (inferredReach) que se están llevando los ganadores por Anunciante
+        const impactByBrand = winnerAds.reduce((acc, ad) => {
+            const name = (ad.row['Anunciante'] || 'Anónimo').substring(0, 15);
+            acc[name] = (acc[name] || 0) + ad.processed.inferredReach;
             return acc;
         }, {});
+
+        // Lo convertimos en array, ordenamos por mayor impacto y tomamos el Top 5
+        const sortedBrands = Object.entries(impactByBrand).sort((a, b) => b[1] - a[1]).slice(0, 5);
+        
+        const donutLabels = sortedBrands.length > 0 ? sortedBrands.map(item => item[0]) : ['Sin Competidores'];
+        const donutData = sortedBrands.length > 0 ? sortedBrands.map(item => item[1]) : [1];
 
         const metaCtx = document.getElementById('metaChart')?.getContext('2d');
         if (metaCtx) {
@@ -427,8 +515,12 @@ document.addEventListener('DOMContentLoaded', () => {
             chartInstances.meta = new Chart(metaCtx, {
                 type: 'doughnut',
                 data: {
-                    labels: Object.keys(types),
-                    datasets: [{ data: Object.values(types), backgroundColor: ['#00df82', '#1877f2', '#ff4d4d', '#fbbc05', '#94a3b8'], borderWidth: 0 }]
+                    labels: donutLabels,
+                    datasets: [{ 
+                        data: donutData, 
+                        backgroundColor: ['#00df82', '#1877f2', '#ff4d4d', '#fbbc05', '#94a3b8'], 
+                        borderWidth: 0 
+                    }]
                 },
                 options: { responsive: true, maintainAspectRatio: false }
             });

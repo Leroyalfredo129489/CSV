@@ -165,7 +165,7 @@
 
                     <div id="n8n-status-area" style="margin-top: 1.5rem; text-align: center; display: none;">
                         <div class="loader" id="n8n-loader" style="margin: 0 auto 10px;"></div>
-                        <p id="n8n-status-text" style="color: var(--primary-green);"></p>
+                        <p id="n8n-status-text"></p>
                     </div>
                 </div>
             </div>
@@ -273,10 +273,7 @@
                 <input type="file" id="file-input" hidden accept=".xlsx, .xls, .csv">
             </div>
 
-            <div id="upload-status"
-                style="text-align: center; font-size: 0.9rem; margin-top: 1rem; color: var(--primary-green); display: none;">
-                Analizando patrones competitivos...
-            </div>
+            <div id="upload-status" style="display: none;"></div>
         </div>
     </div>
     <!-- Patch Notes Modal -->

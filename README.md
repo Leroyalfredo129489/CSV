@@ -1,41 +1,52 @@
-# Documentación Técnica y Limitaciones - Unified Ads Dashboard (v0.0.2)
+# 🚀 Unified Ads Intelligence - Estrategia y Espionaje Ético
 
-## 📌 Propósito de la Herramienta
-Este Dashboard es un **Organizador de Datos** diseñado para estructurar y limpiar los archivos CSV desordenados que se extraen de Meta Ads Library mediante la extensión **"Instant Data Scraper"**. Su función principal es transformar estos datos brutos en métricas de marketing accionables, como el **Ad Trust Score** y el **Alcance Inferido**.
+Bienvenido a la herramienta de análisis de competencia para Meta Ads. Este software transforma los datos scrapeados en inteligencia de mercado procesable en cuestión de segundos.
 
----
-
-## 🛠️ Stack Tecnológico Interno
-*   **Frontend:** HTML5, Vanilla CSS, JavaScript Asíncrono.
-*   **Gráficos:** Chart.js para la visualización de datos.
-*   **Backend/Procesamiento:** n8n (Webhook) para la limpieza y estructuración de CSV a Excel.
-*   **Almacenamiento:** Google Drive (Repositorio central de archivos limpios).
+> [!Ventajas]
+> **Ahorro de Tiempo:** Lo que antes requería hasta **5 horas** de orden manual y análisis humano, esta herramienta lo resuelve en **menos de 30 segundos**.
 
 ---
 
-## 🚫 Limitaciones Conocidas (IMPORTANTE)
+## 🛠️ ¿Qué hace esta herramienta?
 
-> [!WARNING]
-> **Origen del Código:** Gran parte de la estructura base fue generada mediante técnicas de "Vibe Coding" o IA generativa sin supervisión arquitectónica profunda en sus etapas iniciales. Esto implica limitaciones críticas:
+Esto es una herramienta de analisis, utiliza un flujo de trabajo híbrido (n8n + JavaScript) para:
 
-1.  **Procesamiento No Concurrente:** El flujo de n8n **NO soporta archivos múltiples**. Si se suben varios CSV al mismo tiempo, el webhook colapsará o mezclará los datos, resultando en archivos corruptos en Drive.
-2.  **Validación de Datos Débil:** El sistema asume que el archivo subido tiene exactamente el formato esperado por el scraper de Meta. Cualquier cambio en la interfaz de Facebook que cambie los encabezados del CSV romperá la visualización.
-3.  **Dependencia Externa:** Si la extensión "Instant Data Scraper" deja de funcionar o Meta bloquea el scraping, la herramienta queda inhabilitada ya que no cuenta con un crawler propio integrado.
-4.  **Cálculos Basados en Probabilidad:** El "Alcance Inferido" y el "Trust Score" son fórmulas matemáticas estimativas basadas en la longevidad del anuncio, no son datos reales extraídos directamente de la API de Meta (la cual es privada para anuncios de terceros).
-
----
-
-## 📋 Reglas de Uso para el Operador
-1.  **Regla de Oro:** 1 archivo a la vez. Esperar a que el archivo aparezca en Google Drive antes de subir el siguiente.
-2.  **Formato:** Solo subir archivos `.xlsx` procesados por el flujo oficial en la sección de "Importar Excel".
-3.  **Navegador:** Optimizado exclusivamente para Google Chrome debido a la dependencia de la extensión de scraping.
-4.  **Frecuencia de Scraping:** La extracción de datos debe realizarse de forma **MANUAL**. Dado que la información en la Biblioteca de Anuncios no cambia constantemente ni requiere monitoreo al segundo, no es necesario (ni recomendable) intentar automatizar la extracción masiva; basta con un scraping puntual cuando se necesite refrescar el análisis.
+1.  **Limpieza Inteligente (Parser):** Detecta y extrae IDs de anuncios, URLs de medios, fechas de lanzamiento y nombres de anunciantes incluso de archivos CSV "sucios" provenientes de extensiones como *Instant Data Scraper*.
+2.  **Lógica Local vs. Global:** El algoritmo diferencia automáticamente entre una pequeña empresa local (ej. servicios de limpieza en Texas) y un gigante corporativo (ej. Temu, Coca-Cola), ajustando las métricas de impacto de manera realista.
+3.  **Identificación de Ganadores (Winners):** Clasifica los anuncios en categorías estratégicas:
+    *   🔥 **Winners:** Anuncios con alta longevidad y múltiples variantes activas (donde está el dinero).
+    *   🧟 **Zombies:** Anuncios antiguos con una sola variante (posible olvido o retargeting residual).
+    *   🧪 **Test Puros:** Anuncios recién lanzados en fase de validación.
 
 ---
 
-## 🔒 Notas de Seguridad
-*   No se almacenan credenciales de usuario en el frontend.
-*   Los enlaces a Google Drive y extensiones son estáticos y deben ser actualizados manualmente en el `index.html` si cambian.
+## 📊 Características del Dashboard
+
+*   **Ad Trust Score (Score de Victoria):** Una calificación del 0 al 100 basada en la estabilidad y éxito del creativo.
+*   **Impacto Inferido:** Estimación técnica de visualizaciones basada en el cruce de Alcance Estimado + Tiempo + Escala de Variantes.
+*   **Radar de Competencia:** Gráficos dinámicos (Bar & Doughnut) que muestran quién se está llevando la mayor cuota de atención en el mercado analizado.
+*   **Centro de Archivador:** Descarga masiva de todos los creativos (videos e imágenes) detectados en un solo archivo .zip para estudio offline.
 
 ---
-*Documento generado para el control de calidad del proyecto Unified Ads.*
+
+## ⚠️ Limitaciones y Responsabilidad
+
+*   **Estimaciones No Absolutas:** Los datos presentados son **inferencias lógicas** basadas en patrones visibles. No deben tomarse como verdades contables de las empresas analizadas, sino como una guía estratégica.
+*   **Dependencia de Scrapers Externos:** Diseñado específicamente para trabajar con la extensión de Chrome **Instant Data Scraper**. Se recomienda usar, descargar y utilizar el Excel que se obtenga del flujo de N8N para evitar errores o problemas de información.
+*   **Mantenimiento Adaptativo:** La Biblioteca de Anuncios de Meta cambia su estructura (CSS/IDs) con frecuencia. Esta herramienta requiere actualizaciones periódicas para mantener la precisión de la extracción y mantenimiento de la misma.
+
+---
+
+## 💼 Modelo de Mantenimiento y Soporte (Suscripción)
+
+Este proyecto se ofrece bajo un modelo de **apoyo y mantenimiento continuo**. 
+
+Debido a que Meta Ads Library actualiza su código fuente con frecuencia, la herramienta requiere una revisión mensual para asegurar que los selectores y el parser sigan funcionando sin errores. Al pagar tu suscripción mensual, aseguras:
+1.  **Actualizaciones de Seguridad:** Parches inmediatos ante cambios en la plataforma de Meta.
+2.  **Mejoras de Algoritmo:** Optimizaciones constantes en el motor de IA estadística.
+3.  **Soporte Técnico:** Resolución de dudas sobre la interpretación de los datos.
+
+---
+
+**Desarrollado para mentes estratégicas que valoran su tiempo.**
+*Si los datos son el petróleo del siglo XXI, esta herramienta es tu refinería.* 📈✨

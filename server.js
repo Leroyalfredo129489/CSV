@@ -25,7 +25,25 @@ db.serialize(() => {
     db.run("CREATE TABLE IF NOT EXISTS ads (id INTEGER PRIMARY KEY AUTOINCREMENT, ad_id TEXT UNIQUE, advertiser TEXT, description TEXT, longevity INTEGER, trust_score REAL, media_url TEXT, pfp_url TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
 });
 
-const upload = multer({ dest: 'uploads/' });
+const upload = multer({ 
+    dest: 'uploads/',
+    limits: { fileSize: 15 * 1024 * 1024 } // Límite de 15MB para prevenir DOS
+});
+
+// --- CAPA DE SEGURIDAD (PREVENCIÓN DE DATA LEAKS) ---
+app.use((req, res, next) => {
+    const sensitiveFiles = ['.env', 'server.js', 'data.db', 'system.log', 'package.json'];
+    const requestedFile = req.path.toLowerCase();
+    
+    // Si la ruta contiene alguno de los archivos prohibidos, lo bloqueamos inmediatamente.
+    const isSensitive = sensitiveFiles.some(file => requestedFile.includes(file));
+    
+    if (isSensitive) {
+        systemLog('SECURITY_ALERT', 'Tentativa de acceso a archivo del sistema', { path: req.path, ip: req.ip });
+        return res.status(403).json({ error: 'Access Denied: Protected System File' });
+    }
+    next();
+});
 
 
 app.use(express.static(path.join(__dirname)));
